@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YouTube Viral Predictor</title>
+<style>
+  :root { --bg:#fff; --fg:#1a1a1a; --muted:#666; --card:#f5f5f7; --accent:#d00; --ok:#0a7d3b; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121212; --fg:#eee; --muted:#aaa; --card:#1e1e22; --ok:#4cd685; } }
+  body { font-family: system-ui, sans-serif; background:var(--bg); color:var(--fg); max-width:520px; margin:2rem auto; padding:0 1rem; }
+  h1 { font-size:1.4rem; } p.sub { color:var(--muted); margin-top:-.5rem; }
+  label { display:block; margin:.8rem 0 .2rem; font-size:.9rem; }
+  input { width:100%; box-sizing:border-box; padding:.55rem; border:1px solid #8884; border-radius:6px; background:var(--card); color:var(--fg); }
+  button { margin-top:1.2rem; width:100%; padding:.7rem; border:0; border-radius:6px; background:var(--accent); color:#fff; font-size:1rem; cursor:pointer; }
+  #out { margin-top:1.2rem; padding:1rem; background:var(--card); border-radius:8px; display:none; }
+  .big { font-size:1.6rem; font-weight:700; } .viral { color:var(--ok); }
+  small { color:var(--muted); }
+</style>
+</head>
+<body>
+<h1>YouTube Viral Predictor</h1>
+<p class="sub">Linear + logistic regression on US trending videos.</p>
+<div>
+  <label>Likes</label><input id="likes" type="number" min="0" value="20000">
+  <label>Dislikes</label><input id="dislikes" type="number" min="0" value="500">
+  <label>Comment count</label><input id="comment_count" type="number" min="0" value="3000">
+  <label>Title length (characters)</label><input id="title_length" type="number" min="0" value="45">
+  <label>Days since publish</label><input id="days_since_publish" type="number" min="0" value="2">
+  <button id="go">Predict</button>
+</div>
+<div id="out"></div>
+<script>
+const ids = ['likes','dislikes','comment_count','title_length','days_since_publish'];
+const out = document.getElementById('out');
+document.getElementById('go').onclick = async () => {
+  const body = {};
+  ids.forEach(i => body[i] = Number(document.getElementById(i).value));
+  out.style.display = 'block'; out.textContent = 'Predicting...';
+  try {
+    const r = await fetch('/api/predict', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const d = await r.json();
+    if (!r.ok) { out.textContent = d.error || 'Request failed'; return; }
+    out.innerHTML = `<div class="big">${d.predicted_views.toLocaleString()} views</div>
+      <div>Viral probability: <b>${(d.viral_probability*100).toFixed(1)}%</b>
+      — <span class="${d.is_viral?'viral':''}">${d.is_viral ? 'likely VIRAL' : 'not likely viral'}</span></div>
+      <small>Viral = more than ${d.viral_threshold_views.toLocaleString()} views (top 25%).</small>`;
+  } catch (e) { out.textContent = 'Network error: ' + e.message; }
+};
+</script>
+</body>
+</html>

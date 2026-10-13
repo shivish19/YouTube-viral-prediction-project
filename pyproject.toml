@@ -1,0 +1,7 @@
+[project]
+name = "youtube-viral-predictor"
+version = "0.1.0"
+requires-python = ">=3.9"
+
+[tool.vercel]
+entrypoint = "api.predict:handler"
